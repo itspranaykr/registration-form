@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>live inline registration · password strength + localStorage</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    }
+    body {
+      background: linear-gradient(145deg, #f6f9fc 0%, #eef2f5 100%);
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+    .card {
+      max-width: 700px;
+      width: 100%;
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(8px);
+      background: #ffffffdd;
+      border-radius: 2rem;
+      box-shadow: 0 20px 40px -12px rgba(0,20,40,0.35);
+      padding: 2rem 2rem 2.5rem;
+      border: 1px solid #ffffff70;
+    }
+    h2 {
+      font-weight: 600;
+      font-size: 1.9rem;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.35rem 0;
+      color: #0b2b40;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    h2 small {
+      font-size: 0.85rem;
+      font-weight: 400;
+      background: #d0e2ef;
+      color: #113946;
+      padding: 0.2rem 0.9rem;
+      border-radius: 30px;
+      margin-left: 0.75rem;
+    }
+    .sub-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.8rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      border-bottom: 2px dashed #b9d4e7;
+      padding-bottom: 0.5rem;
+    }
+    .counter-badge {
+      background: #1b4f6e;
+      color: white;
+      padding: 0.3rem 1rem;
+      border-radius: 40px;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .form-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .field-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      position: relative;
+    }
+    label {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #1c4b66;
+      min-width: 80px;
+    }
+    .input-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      background: white;
+      border: 1.5px solid #cbdde9;
+      border-radius: 60px;
+      padding: 0.2rem 0.2rem 0.2rem 1.2rem;
+      transition: border 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 4px #00000008;
+    }
+    .input-wrapper:focus-within {
+      border-color: #2f7ca6;
+      box-shadow: 0 0 0 4px #a3d0e9;
+    }
+    .input-wrapper input {
+      width: 100%;
+      border: none;
+      padding: 0.75rem 0.5rem 0.75rem 0;
+      font-size: 1rem;
+      background: transparent;
+      outline: none;
+    }
+    .input-wrapper input[type="password"] {
+      letter-spacing: 0.1px;
+    }
+    .toggle-visibility {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      padding: 0 0.8rem;
+      cursor: pointer;
+      color: #2d6f94;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.1s;
+      user-select: none;
+    }
+    .toggle-visibility:hover {
+      transform: scale(1.1);
+      color: #0a3142;
+    }
+    .inline-hint {
+      margin-left: 86px; /* align under field after label width */
+      font-size: 0.8rem;
+      min-height: 1.4rem;
+      color: #444;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .validation-icon {
+      display: inline-block;
+      width: 18px;
+      text-align: center;
+      font-weight: 600;
+    }
+    .valid {
+      color: #117f4a;
+    }
+    .invalid {
+      color: #bc3e2b;
+    }
+    .neutral {
+      color: #6b7f8e;
+    }
+    .password-strength {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      background: #eaf1f7;
+      padding: 0.3rem 1rem 0.3rem 1rem;
+      border-radius: 30px;
+      font-size: 0.85rem;
+    }
+    .meter-bar {
+      width: 140px;
+      height: 8px;
+      background: #cfdde8;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .meter-fill {
+      height: 100%;
+      width: 0%;
+      background: #b1b1b1;
+      transition: width 0.2s, background 0.2s;
+    }
+    .strength-text {
+      font-weight: 600;
+      min-width: 70px;
+      color: #1e3e52;
+    }
+    button[type="submit"] {
+      background: #1b5f83;
+      border: none;
+      padding: 0.9rem 1.8rem;
+      font-size: 1.2rem;
+      font-weight: 600;
+      border-radius: 60px;
+      color: white;
+      cursor: pointer;
+      transition: 0.15s;
+      width: fit-content;
+      min-width: 200px;
+      box-shadow: 0 8px 16px -8px #0f3f5e;
+      border: 1px solid #4696c9;
+      margin-top: 0.5rem;
+    }
+    button[type="submit"]:hover:not(:disabled) {
+      background: #124b69;
+      transform: scale(1.02);
+    }
+    button[type="submit"]:disabled {
+      background: #acc4d4;
+      box-shadow: none;
+      cursor: not-allowed;
+      border-color: #9ab5c7;
+    }
+    .submissions-panel {
+      margin-top: 2.5rem;
+      background: #e9f0f6c9;
+      border-radius: 1.5rem;
+      padding: 1.5rem 1.5rem 1rem;
+      border: 1px solid #fff;
+    }
+    .submissions-panel h3 {
+      margin: 0 0 0.5rem 0;
+      font-weight: 600;
+      color: #10394e;
+      display: flex;
+      gap: 0.8rem;
+      align-items: center;
+    }
+    .submission-list {
+      max-height: 170px;
+      overflow-y: auto;
+      background: #ffffffba;
+      padding: 0.5rem 1rem;
+      border-radius: 30px;
+      list-style: none;
+      font-size: 0.9rem;
+    }
+    .submission-list li {
+      padding: 0.45rem 0;
+      border-bottom: 1px solid #cbdeec;
+      display: flex;
+      gap: 1rem;
+      color: #042331;
+    }
+    .submission-list li:last-child {
+      border: none;
+    }
+    .clear-btn {
+      background: transparent;
+      border: 1.5px solid #226688;
+      color: #226688;
+      padding: 0.2rem 1.2rem;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: 0.1s;
+      margin-left: auto;
+    }
+    .clear-btn:hover {
+      background: #cde1ef;
+    }
+    .error-msg {
+      color: #c2372a;
+      font-weight: 500;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h2>📋 registration <small>inline validation</small></h2>
+  <div class="sub-header">
+    <span class="counter-badge" id="subCount">0 submissions</span>
+    <button class="clear-btn" id="clearStorageBtn" type="button">🗑️ clear all</button>
+  </div>
+
+  <form id="registerForm" class="form-grid">
+    <!-- NAME -->
+    <div class="field">
+      <div class="field-row">
+        <label>👤 name</label>
+        <div class="input-wrapper">
+          <input type="text" id="nameInput" placeholder="at least 2 letters" autocomplete="off">
+        </div>
+      </div>
+      <div class="inline-hint" id="nameHint">
+        <span class="validation-icon" id="nameIcon">⚪</span> <span id="nameMsg">minimum 2 characters</span>
+      </div>
+    </div>
+
+    <!-- EMAIL -->
+    <div class="field">
+      <div class="field-row">
+        <label>📧 email</label>
+        <div class="input-wrapper">
+          <input type="email" id="emailInput" placeholder="name@example.com" autocomplete="off">
+        </div>
+      </div>
+      <div class="inline-hint" id="emailHint">
+        <span class="validation-icon" id="emailIcon">⚪</span> <span id="emailMsg">must be valid email</span>
+      </div>
+    </div>
+
+    <!-- PHONE -->
+    <div class="field">
+      <div class="field-row">
+        <label>📞 phone</label>
+        <div class="input-wrapper">
+          <input type="tel" id="phoneInput" placeholder="e.g. +1 555 555 1234" autocomplete="off">
+        </div>
+      </div>
+      <div class="inline-hint" id="phoneHint">
+        <span class="validation-icon" id="phoneIcon">⚪</span> <span id="phoneMsg">10‑15 digits, optional +</span>
+      </div>
+    </div>
+
+    <!-- PASSWORD + TOGGLE + STRENGTH METER -->
+    <div class="field">
+      <div class="field-row">
+        <label>🔒 password</label>
+        <div class="input-wrapper">
+          <input type="password" id="passwordInput" placeholder="create password" autocomplete="new-password">
+          <button type="button" class="toggle-visibility" id="togglePasswordBtn" aria-label="show/hide password">👁️</button>
+        </div>
+      </div>
+      <div class="inline-hint">
+        <span class="validation-icon" id="passwordIcon">⚪</span> <span id="passwordMsg">min 8 chars, with upper, lower, number</span>
+        <div class="password-strength">
+          <span class="strength-text" id="strengthLabel">weak</span>
+          <div class="meter-bar"><div class="meter-fill" id="strengthMeterFill" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end;">
+      <button type="submit" id="submitBtn" disabled>📬 submit registration</button>
+    </div>
+  </form>
+
+  <!-- SUBMISSIONS PANEL -->
+  <div class="submissions-panel">
+    <h3>📋 previous entries <span style="font-size:0.8rem; background:#bdd8eb; padding:2px 12px; border-radius:20px;" id="arrayLength">0</span></h3>
+    <ul class="submission-list" id="submissionList">
+      <li style="color:#6f8fa1; font-style:italic;">— no submissions yet —</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ----- DOM elements -----
+    const nameInput = document.getElementById('nameInput');
+    const emailInput = document.getElementById('emailInput');
+    const phoneInput = document.getElementById('phoneInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const toggleBtn = document.getElementById('togglePasswordBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const form = document.getElementById('registerForm');
+
+    // hint / icon elements
+    const nameIcon = document.getElementById('nameIcon');
+    const nameMsg = document.getElementById('nameMsg');
+    const emailIcon = document.getElementById('emailIcon');
+    const emailMsg = document.getElementById('emailMsg');
+    const phoneIcon = document.getElementById('phoneIcon');
+    const phoneMsg = document.getElementById('phoneMsg');
+    const passwordIcon = document.getElementById('passwordIcon');
+    const passwordMsg = document.getElementById('passwordMsg');
+
+    // strength meter
+    const strengthFill = document.getElementById('strengthMeterFill');
+    const strengthLabel = document.getElementById('strengthLabel');
+
+    // submissions UI
+    const subCountSpan = document.getElementById('subCount');
+    const arrayLengthSpan = document.getElementById('arrayLength');
+    const submissionList = document.getElementById('submissionList');
+    const clearBtn = document.getElementById('clearStorageBtn');
+
+    // ---------- localStorage key ----------
+    const STORAGE_KEY = 'registration_submissions';
+
+    // ---------- utils ----------
+    function loadSubmissions() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        return stored ? JSON.parse(stored) : [];
+      } catch (e) {
+        console.warn('invalid localStorage, resetting');
+        return [];
+      }
+    }
+
+    function saveSubmissions(arr) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+    }
+
+    // render submission list + counters
+    function renderSubmissionList() {
+      const subs = loadSubmissions();
+      const count = subs.length;
+      subCountSpan.innerText = count + (count === 1 ? ' submission' : ' submissions');
+      arrayLengthSpan.innerText = count;
+
+      if (count === 0) {
+        submissionList.innerHTML = '<li style="color:#6f8fa1; font-style:italic;">— no submissions yet —</li>';
+        return;
+      }
+
+      // show last 5 most recent (newest first)
+      const reversed = [...subs].reverse();
+      const lastFive = reversed.slice(0, 5);
+      let htmlStr = '';
+      lastFive.forEach(entry => {
+        const name = escapeHtml(entry.name || '');
+        const email = escapeHtml(entry.email || '');
+        const phone = escapeHtml(entry.phone || '');
+        // password hidden: only show placeholder
+        htmlStr += `<li>👤 ${name} · 📧 ${email} · 📞 ${phone} · 🔒 ****</li>`;
+      });
+      if (subs.length > 5) {
+        htmlStr += `<li style="opacity:0.7;">⋯ and ${subs.length-5} more</li>`;
+      }
+      submissionList.innerHTML = htmlStr;
+    }
+
+    // simple escape
+    function escapeHtml(unsafe) {
+      return unsafe.replace(/[&<>"]/g, function(m) {
+        if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; if(m === '"') return '&quot;';
+        return m;
+      });
+    }
+
+    // ----- validation state -----
+    let validationState = {
+      name: false,
+      email: false,
+      phone: false,
+      password: false
+    };
+
+    function updateSubmitButton() {
+      const allValid = validationState.name && validationState.email && validationState.phone && validationState.password;
+      submitBtn.disabled = !allValid;
+    }
+
+    // ----- individual validators + icon update -----
+    function validateName() {
+      const val = nameInput.value.trim();
+      const isValid = val.length >= 2;
+      validationState.name = isValid;
+      nameIcon.innerText = isValid ? '✅' : '❌';
+      nameIcon.className = `validation-icon ${isValid ? 'valid' : 'invalid'}`;
+      nameMsg.innerText = isValid ? 'looks good' : 'at least 2 characters';
+      return isValid;
+    }
+
+    function validateEmail() {
+      const val = emailInput.value.trim();
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;  // basic email
+      const isValid = re.test(val);
+      validationState.email = isValid;
+      emailIcon.innerText = isValid ? '✅' : '❌';
+      emailIcon.className = `validation-icon ${isValid ? 'valid' : 'invalid'}`;
+      emailMsg.innerText = isValid ? 'valid email' : 'enter a valid email (e.g. name@domain.com)';
+      return isValid;
+    }
+
+    function validatePhone() {
+      const val = phoneInput.value.trim();
+      // optional leading +, digits, spaces, dashes, parentheses – we count digits.
+      const digits = val.replace(/\D/g, '');
+      const isValid = digits.length >= 10 && digits.length <= 15;  // 10-15 digits
+      validationState.phone = isValid;
+      phoneIcon.innerText = isValid ? '✅' : '❌';
+      phoneIcon.className = `validation-icon ${isValid ? 'valid' : 'invalid'}`;
+      phoneMsg.innerText = isValid ? 'valid phone' : '10‑15 digits required';
+      return isValid;
+    }
+
+    function evaluatePasswordStrength(pw) {
+      let score = 0;
+      if (pw.length >= 8) score += 1;
+      if (/[a-z]/.test(pw)) score += 1;
+      if (/[A-Z]/.test(pw)) score += 1;
+      if (/[0-9]/.test(pw)) score += 1;
+      // extra point for special (optional but adds strength)
+      if (/[^A-Za-z0-9]/.test(pw)) score += 1;
+      return score; // 0-5
+    }
+
+    function updatePasswordStrengthMeter() {
+      const pw = passwordInput.value;
+      const score = evaluatePasswordStrength(pw);
+
+      let strengthText = 'weak';
+      let widthPercent = 0;
+      let color = '#b1b1b1';
+
+      if (pw.length === 0) {
+        strengthText = 'empty';
+        widthPercent = 0;
+      } else if (score <= 2) {
+        strengthText = 'weak';
+        widthPercent = 25;
+        color = '#c05a4a';
+      } else if (score === 3) {
+        strengthText = 'fair';
+        widthPercent = 50;
+        color = '#e0903b';
+      } else if (score === 4) {
+        strengthText = 'good';
+        widthPercent = 75;
+        color = '#539e6b';
+      } else if (score >= 5) {
+        strengthText = 'strong';
+        widthPercent = 100;
+        color = '#1d8550';
+      }
+
+      strengthLabel.innerText = strengthText;
+      strengthFill.style.width = widthPercent + '%';
+      strengthFill.style.background = color;
+    }
+
+    function validatePassword() {
+      const pw = passwordInput.value;
+      // our password requirement: min 8 chars, at least one lowercase, one uppercase, one digit
+      const hasLower = /[a-z]/.test(pw);
+      const hasUpper = /[A-Z]/.test(pw);
+      const hasDigit = /[0-9]/.test(pw);
+      const lengthOk = pw.length >= 8;
+
+      const isValid = lengthOk && hasLower && hasUpper && hasDigit;
+      validationState.password = isValid;
+
+      passwordIcon.innerText = isValid ? '✅' : '❌';
+      passwordIcon.className = `validation-icon ${isValid ? 'valid' : 'invalid'}`;
+
+      if (!pw) {
+        passwordMsg.innerText = 'password required';
+      } else if (!lengthOk) {
+        passwordMsg.innerText = 'at least 8 characters';
+      } else if (!(hasLower && hasUpper)) {
+        passwordMsg.innerText = 'mix of uppercase & lowercase';
+      } else if (!hasDigit) {
+        passwordMsg.innerText = 'include at least one number';
+      } else {
+        passwordMsg.innerText = 'strong password';
+      }
+
+      updatePasswordStrengthMeter();
+      return isValid;
+    }
+
+    // ----- toggle password visibility -----
+    let passwordVisible = false;
+    toggleBtn.addEventListener('click', () => {
+      const currentType = passwordInput.getAttribute('type');
+      if (currentType === 'password') {
+        passwordInput.setAttribute('type', 'text');
+        toggleBtn.innerText = '🔓';
+      } else {
+        passwordInput.setAttribute('type', 'password');
+        toggleBtn.innerText = '👁️';
+      }
+    });
+
+    // ----- attach inline listeners -----
+    nameInput.addEventListener('input', () => { validateName(); updateSubmitButton(); });
+    emailInput.addEventListener('input', () => { validateEmail(); updateSubmitButton(); });
+    phoneInput.addEventListener('input', () => { validatePhone(); updateSubmitButton(); });
+    passwordInput.addEventListener('input', () => { validatePassword(); updateSubmitButton(); });
+
+    // initial validation (set proper icons on page load)
+    validateName();
+    validateEmail();
+    validatePhone();
+    validatePassword();
+    updateSubmitButton();
+
+    // ----- form submit -----
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      // double-check validation before accept
+      const okName = validateName();
+      const okEmail = validateEmail();
+      const okPhone = validatePhone();
+      const okPass = validatePassword();
+      if (!(okName && okEmail && okPhone && okPass)) {
+        updateSubmitButton();
+        return;
+      }
+
+      const submissions = loadSubmissions();
+
+      const newEntry = {
+        name: nameInput.value.trim(),
+        email: emailInput.value.trim(),
+        phone: phoneInput.value.trim(),
+        password: 'hidden',   // we don't store plain password
+        timestamp: new Date().toISOString()
+      };
+
+      submissions.push(newEntry);
+      saveSubmissions(submissions);
+
+      // clear form
+      nameInput.value = '';
+      emailInput.value = '';
+      phoneInput.value = '';
+      passwordInput.value = '';
+
+      // revalidate (to show neutral icons / empty state)
+      validateName();
+      validateEmail();
+      validatePhone();
+      validatePassword();
+      updateSubmitButton();
+      renderSubmissionList();
+    });
+
+    // ----- clear all submissions -----
+    clearBtn.addEventListener('click', () => {
+      if (confirm('Delete all saved submissions?')) {
+        localStorage.removeItem(STORAGE_KEY);
+        renderSubmissionList();
+      }
+    });
+
+    // initial render from localStorage
+    renderSubmissionList();
+  })();
+</script>
+</body>
+</html>
